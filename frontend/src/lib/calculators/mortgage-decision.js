@@ -90,6 +90,10 @@ export const mortgageDecisionCalculator = {
     if (homePrice <= 0 || downPayment < 0 || downPayment >= homePrice)
       throw new Error("Down payment must be between 0 and less than home price.");
     if (income <= 0) throw new Error("Monthly income must be greater than zero.");
+    if (!(years > 0) || years > 50)
+      throw new Error("Loan term must be between 1 and 50 years.");
+    if (!(rate > 0) || rate > 50)
+      throw new Error("Mortgage interest rate must be between 0 and 50%.");
 
     const loan = homePrice - downPayment;
     const rMonthly = rate / 100 / 12;
