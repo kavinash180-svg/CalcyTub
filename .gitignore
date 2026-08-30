@@ -86,3 +86,10 @@ android-sdk/
 credentials.json
 *.key
 .credentials
+
+# Emergent-specific runtime & metadata (not needed after export)
+.emergent/
+.gitconfig
+frontend/plugins/health-check/
+test_reports/
+frontend/node_modules/.cache/default-development/0.pack
