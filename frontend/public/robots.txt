@@ -1,9 +1,8 @@
 User-agent: *
 Allow: /
-Disallow: /admin
 
-# Well-known infra
+# Private / internal areas
+Disallow: /admin
 Disallow: /api/
 
-# Discovery
-Sitemap: /sitemap.xml
+Sitemap: https://calcytub.com/sitemap.xml

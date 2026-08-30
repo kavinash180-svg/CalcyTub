@@ -63,6 +63,7 @@
   "scripts": {
     "start": "craco start",
     "build": "craco build",
+    "build:sitemap": "node scripts/build-sitemap.mjs",
     "test": "craco test"
   },
   "browserslist": {

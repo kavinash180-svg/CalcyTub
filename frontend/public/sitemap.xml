@@ -16,6 +16,11 @@
     <changefreq>weekly</changefreq>
   </url>
   <url>
+    <loc>https://calcytub.com/compare</loc>
+    <priority>0.7</priority>
+    <changefreq>weekly</changefreq>
+  </url>
+  <url>
     <loc>https://calcytub.com/articles</loc>
     <priority>0.6</priority>
     <changefreq>weekly</changefreq>
