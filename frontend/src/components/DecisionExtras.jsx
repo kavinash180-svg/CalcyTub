@@ -121,6 +121,97 @@ function InsightsList({ items }) {
   );
 }
 
+const TONE_STYLES = {
+  good: "bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 ring-emerald-500/30",
+  info: "bg-sky-500/15 text-sky-700 dark:text-sky-300 ring-sky-500/30",
+  warn: "bg-amber-500/20 text-amber-800 dark:text-amber-300 ring-amber-500/30",
+  bad: "bg-rose-500/15 text-rose-700 dark:text-rose-300 ring-rose-500/30",
+};
+const TONE_FILLS = {
+  good: "bg-emerald-500/60",
+  info: "bg-sky-500/60",
+  warn: "bg-amber-500/70",
+  bad: "bg-rose-500/60",
+};
+
+function ReferenceScale({ title, value, unit, scaleMin, scaleMax, ranges, active, interpretation }) {
+  const min = scaleMin ?? ranges[0].min;
+  const max = scaleMax ?? ranges[ranges.length - 1].max;
+  const clampedValue = Math.max(min, Math.min(max, value));
+  const pos = ((clampedValue - min) / (max - min)) * 100;
+  const activeRange =
+    ranges.find((r) => value >= r.min && value < r.max) ||
+    ranges.find((r) => value >= r.min && value <= r.max) ||
+    ranges[ranges.length - 1];
+  const activeLabel = active || activeRange?.label;
+  const formattedValue = Number.isFinite(value) ? Number(value.toFixed(2)).toString() : "—";
+  return (
+    <div className="rounded-lg border border-border bg-card p-4 sm:p-5" data-testid="reference-scale">
+      <div className="flex items-baseline justify-between flex-wrap gap-2 mb-3">
+        <div>
+          <div className="text-xs uppercase tracking-widest text-muted-foreground">Your Result</div>
+          <div className="font-display text-2xl sm:text-3xl font-semibold">
+            {formattedValue}
+            {unit && <span className="ml-1 text-base text-muted-foreground">{unit}</span>}
+          </div>
+        </div>
+        {activeRange && (
+          <span className={`inline-flex items-center gap-2 px-3 py-1 rounded-full text-sm font-medium ring-1 ${TONE_STYLES[activeRange.tone] || TONE_STYLES.info}`} data-testid="reference-active">
+            <span className={`w-2 h-2 rounded-full ${TONE_FILLS[activeRange.tone] || TONE_FILLS.info}`} />
+            {activeLabel}
+          </span>
+        )}
+      </div>
+      <div className="relative">
+        <div className="flex h-3 rounded-full overflow-hidden ring-1 ring-border">
+          {ranges.map((r, i) => {
+            const start = Math.max(min, r.min);
+            const end = Math.min(max, r.max);
+            const width = ((end - start) / (max - min)) * 100;
+            if (width <= 0) return null;
+            return (
+              <div
+                key={i}
+                className={TONE_FILLS[r.tone] || TONE_FILLS.info}
+                style={{ width: `${width}%` }}
+                aria-hidden="true"
+              />
+            );
+          })}
+        </div>
+        <div
+          className="absolute -top-1.5 flex items-center justify-center"
+          style={{ left: `calc(${pos}% - 0.6rem)` }}
+          aria-hidden="true"
+        >
+          <div className="w-3 h-6 rounded-sm bg-foreground shadow-md ring-2 ring-background" />
+        </div>
+      </div>
+      <div className="mt-2 flex justify-between text-[10px] text-muted-foreground">
+        <span>{min}{unit}</span>
+        <span>{max}{unit}</span>
+      </div>
+      <ul className="mt-4 grid gap-1.5 sm:grid-cols-2">
+        {ranges.map((r) => {
+          const isActive = r.label === activeLabel;
+          return (
+            <li key={r.label} className={`flex items-center gap-2 text-xs sm:text-sm ${isActive ? "font-semibold" : "text-muted-foreground"}`}>
+              <span className={`w-2.5 h-2.5 rounded-full ${TONE_FILLS[r.tone] || TONE_FILLS.info} ${isActive ? "ring-2 ring-offset-1 ring-offset-card ring-foreground" : ""}`} />
+              <span>{r.label}</span>
+              <span className={isActive ? "" : "opacity-70"}>
+                {r.min === 0 || r.min === -Infinity ? `< ${r.max}` : r.max === Infinity || r.max === 100 ? `≥ ${r.min}` : `${r.min} – ${r.max}`}{unit ? ` ${unit}` : ""}
+              </span>
+            </li>
+          );
+        })}
+      </ul>
+      {interpretation && (
+        <p className="mt-4 text-xs sm:text-sm text-muted-foreground leading-relaxed">{interpretation}</p>
+      )}
+    </div>
+  );
+}
+
 function BreakEven({ years, closingCost }) {
   return (
     <div className="rounded-lg border border-border bg-muted/30 p-4 text-sm">
@@ -169,6 +260,8 @@ export default function DecisionExtras({ extras }) {
             return <Section key={i} title="Break-Even Estimate"><BreakEven {...ex.data} /></Section>;
           case "insights":
             return <Section key={i} title="Mortgage Decision Insights"><InsightsList items={ex.data} /></Section>;
+          case "referenceRange":
+            return <Section key={i} title={ex.data.title || "Reference Range"}><ReferenceScale {...ex.data} /></Section>;
           default:
             return null;
         }

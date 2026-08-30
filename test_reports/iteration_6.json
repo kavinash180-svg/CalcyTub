@@ -1,0 +1,37 @@
+{
+  "summary": "Iteration 6 testing of the global display-currency system. Verified: currency-select present with exactly 13 options + aria-label 'Display currency' on all 11 money calculators (mortgage, home-loan-emi, sip, fd, gst, personal-loan-emi, compound-interest, simple-interest, home-loan-prepayment, loan-eligibility, mortgage-decision) plus mortgage-amortization; absent on all 5 non-money calculators (bmi, ph, molar-mass, percentage, age). Input prefixes update ($/₹/€/£/¥). CRITICAL SPEC CONFIRMED: no numeric conversion — mortgage monthly payment stays 2,514.28 across USD/INR/JPY/EUR, home-loan-emi EMI stays 43,391.16 across INR/USD; results also re-format live without re-clicking Calculate. Locale grouping correct (INR ₹54,13,878.80 Indian grouping vs USD $5,413,878.80). JPY has 0 fraction digits. localStorage 'calcytub_currency' persists across reload and across calculators; after clear, falls back to calculator default (mortgage=USD, gst/sip/fd/emi=INR). Amortization table Principal/Interest/Balance columns switch symbol. Compare page has 2 independent selects (changing A did not change B). Regressions all pass: BMI reference-scale active 'Healthy' (BMI 22.49), pH Acidic/Neutral/Alkaline scale, mortgage-decision P&I $2,528.27 / score 62 'Mixed' and €2.528,27 after switching to EUR, compound-interest FV 22,196.40, simple-interest 3,000/13,000, loan-eligibility max EMI 45,000 & loan 5,185,387.79, prepayment new tenure 10.8y / saved 977,109.34, theme toggle dark->light, nav Compare -> /compare, header search (open-search-btn) -> /mortgage-calculator, robots.txt & sitemap.xml 200. Backend pytest 23/23 passed (no backend changes). Mobile 375x800: select visible (251x36) and no horizontal overflow (scrollWidth==clientWidth==375); AED works. No critical or functional defects found; only cosmetic/consistency nits below.",
+  "backend_issues": { "critical": [], "minor": [] },
+  "frontend_issues": {
+    "ui_bugs": [
+      {"component": "CalculatorRenderer currency <select>", "issue": "React console error on every money calculator: 'In HTML, <span> cannot be a child of <option>. This will cause a hydration error.' The preview instrumentation wraps the dynamic option text ({c.symbol} {c.code} — {c.name}) in a <span>, which is invalid inside <option>. Fix by using a single pre-computed string expression (e.g. label={`${c.symbol} ${c.code} — ${c.name}`} / {optionLabel(c)}) so no multi-expression children are rendered inside <option>.", "selector": "[data-testid=currency-select] option", "priority": "MEDIUM"},
+      {"component": "Calculator content copy (Worked Example / FAQ / description)", "issue": "Static prose keeps hard-coded symbols (e.g. prepayment worked example shows '₹30 lakh ... ₹29,542' while results render '29.542,19 €'; GST example shows ₹ with any selected currency). Content is not currency-aware, so the page mixes two currencies.", "selector": "article prose sections", "priority": "LOW"},
+      {"component": "Compare page currency selects", "issue": "Both scenario panels read/write the same localStorage key, so they always initialise to the same currency and the last change wins on persistence. Independence during a session works, but per-panel persistence is not isolated.", "selector": "[data-testid=currency-select]", "priority": "LOW"}
+    ],
+    "integration_issues": [],
+    "design_issues": [
+      {"screen": "Money calculators - currency formatting", "issues": [
+        "Review-request expectations '€2,528.27' and '¥…' do not match actual (locale-correct) output: EUR de-DE renders '2.528,27 €' (symbol trailing, dot grouping) and JPY ja-JP renders fullwidth '￥2,514'. Implementation is locale-correct; only the spec/expectation is off — decide whether symbol-leading en-style formatting is desired for EUR.",
+        "AED (ar-AE) renders with RTL control marks: '‏2,514.28 د.إ.‏', which can look misaligned inside the LTR result tile.",
+        "Native <select> is used for the currency picker while the rest of the app uses shadcn components in some places; visually acceptable but not design-system consistent."
+      ]}
+    ]
+  },
+  "test_report_links": ["/app/backend/tests/backend_test.py", "/app/test_reports/pytest/pytest_results.xml"],
+  "action_items": [
+    "Fix invalid <option> children (span-in-option hydration error) by rendering a single string label inside <option>.",
+    "Optional: make worked-example/FAQ copy currency-agnostic or currency-aware to avoid mixed symbols on the page.",
+    "Optional: decide EUR/JPY formatting convention (locale-native vs symbol-leading) and align docs/expectations."
+  ],
+  "critical_code_review_comments": [
+    "setCurrency's `setResult(prev => ({...prev}))` shallow-copy re-render hack is fragile; the currency should just be read at render time (it already is) — the extra state churn is unnecessary and could mask stale nested result objects.",
+    "Currency detection relies on input.prefix string matching; a money field without a prefix (or with a custom prefix) will silently lose the selector. Verified today that every calculator with currency-formatted results does have a money input, but consider setting moneyField:true explicitly in the definitions.",
+    "formatCurrency does not set minimumFractionDigits, so with maximumFractionDigits only, whole values still render .00 for USD (fine), but any future currency with 0-decimals needs both bounds set."
+  ],
+  "updated_files": [],
+  "success_rate": {"backend": "100% (23/23)", "frontend": "100% of functional currency + regression checks passed; 3 cosmetic/console nits"},
+  "seed_data_creation": "None (client-side only app)",
+  "should_call_test_agent_after_fix": false,
+  "should_main_agent_self_test": true,
+  "context_for_next_testing_agent": "Currency system fully verified in iteration 6 (selector presence/absence, symbol swap on inputs+results+amortization, no numeric conversion, localStorage persistence & fallback, compare-page dual selects, mobile). Backend suite unchanged at 23/23. Only open items: span-in-option hydration console error, currency-agnostic prose copy, EUR/JPY locale formatting convention. Header testids: brand-logo, nav-*, open-search-btn, theme-toggle, mobile-menu-btn.",
+  "rca_of_the_issue": "Hydration console error root cause: <option> in CalculatorRenderer.jsx line 98 renders three JSX expressions, which the preview instrumentation wraps in a <span data-ve-dynamic> — <span> is not valid inside <option>, so React logs a hydration/validateDOMNesting error. Functionality is unaffected (select works, 13 options render), but it pollutes the console on every money calculator."
+}

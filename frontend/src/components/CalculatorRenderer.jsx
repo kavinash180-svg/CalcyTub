@@ -1,7 +1,10 @@
 import { useEffect, useMemo, useState } from "react";
 import { formatResult } from "../lib/formatters";
-import { RotateCcw, Calculator as CalcIcon } from "lucide-react";
+import { RotateCcw, Calculator as CalcIcon, Globe } from "lucide-react";
 import DecisionExtras from "./DecisionExtras";
+import {
+  CURRENCIES, currencySymbol, isMoneyField, readStoredCurrency, persistCurrency,
+} from "../lib/currency";
 
 function defaultValues(inputs) {
   const out = {};
@@ -16,7 +19,6 @@ function coerce(field, raw) {
     return isNaN(n) ? null : n;
   }
   if (field.type === "select") {
-    // Preserve numeric option values
     const opt = field.options?.find((o) => String(o.value) === String(raw));
     return opt ? opt.value : raw;
   }
@@ -27,6 +29,18 @@ export default function CalculatorRenderer({ calc }) {
   const [values, setValues] = useState(() => defaultValues(calc.inputs));
   const [result, setResult] = useState(null);
   const [error, setError] = useState("");
+
+  const moneyFields = useMemo(() => calc.inputs.filter(isMoneyField), [calc.inputs]);
+  const supportsCurrency = moneyFields.length > 0;
+  const [currency, setCurrencyState] = useState(() =>
+    supportsCurrency ? readStoredCurrency(calc.currency || "USD") : (calc.currency || "USD")
+  );
+  const setCurrency = (c) => {
+    setCurrencyState(c);
+    if (supportsCurrency) persistCurrency(c);
+    // Re-run compute using the new currency for result formatting only
+    if (result) setResult((prev) => prev ? { ...prev } : prev);
+  };
 
   const canCompute = useMemo(
     () =>
@@ -67,6 +81,25 @@ export default function CalculatorRenderer({ calc }) {
 
   return (
     <div className="calc-card p-5 sm:p-7" data-testid="calculator-card">
+      {supportsCurrency && (
+        <div className="mb-4 flex items-center justify-between flex-wrap gap-2 pb-4 border-b border-border">
+          <div className="flex items-center gap-2 text-sm text-muted-foreground">
+            <Globe className="w-4 h-4" />
+            <span>Display currency</span>
+          </div>
+          <select
+            value={currency}
+            onChange={(e) => setCurrency(e.target.value)}
+            data-testid="currency-select"
+            aria-label="Display currency"
+            className="h-9 px-2 rounded-md border border-input bg-card text-sm"
+          >
+            {CURRENCIES.map((c) => (
+              <option key={c.code} value={c.code}>{`${c.symbol} ${c.code} — ${c.name}`}</option>
+            ))}
+          </select>
+        </div>
+      )}
       <form onSubmit={onCalculate} className="grid gap-4 sm:grid-cols-2">
         {calc.inputs.map((f) => (
           <div key={f.key} className={f.type === "text" ? "sm:col-span-2" : ""}>
@@ -87,8 +120,10 @@ export default function CalculatorRenderer({ calc }) {
               </select>
             ) : (
               <div className="relative flex items-center">
-                {f.prefix && (
-                  <span className="absolute left-3 text-muted-foreground text-sm">{f.prefix}</span>
+                {(isMoneyField(f) ? currencySymbol(currency) : f.prefix) && (
+                  <span className="absolute left-3 text-muted-foreground text-sm">
+                    {isMoneyField(f) ? currencySymbol(currency) : f.prefix}
+                  </span>
                 )}
                 <input
                   id={`fld-${f.key}`}
@@ -98,7 +133,7 @@ export default function CalculatorRenderer({ calc }) {
                   value={values[f.key] ?? ""}
                   onChange={(e) => onChange(f, e.target.value)}
                   className={`w-full h-11 rounded-md border border-input bg-card focus:border-primary focus:outline-none focus:ring-2 focus:ring-ring/30 ${
-                    f.prefix ? "pl-8" : "pl-3"
+                    (isMoneyField(f) || f.prefix) ? "pl-10" : "pl-3"
                   } ${f.suffix ? "pr-16" : "pr-3"}`}
                   placeholder={f.placeholder}
                 />
@@ -155,7 +190,7 @@ export default function CalculatorRenderer({ calc }) {
                   {r.label}
                 </div>
                 <div className={`mt-1 font-display text-2xl font-semibold ${r.primary ? "" : ""}`}>
-                  {formatResult(r.value, r.format, { currency: r.currency })}
+                  {formatResult(r.value, r.format, { currency: supportsCurrency ? currency : r.currency })}
                 </div>
               </div>
             ))}
@@ -179,7 +214,7 @@ export default function CalculatorRenderer({ calc }) {
                         {row.map((cell, j) => (
                           <td key={j} className="px-3 py-2">
                             {typeof cell === "object" && cell !== null
-                              ? formatResult(cell.value, cell.format, { currency: cell.currency })
+                              ? formatResult(cell.value, cell.format, { currency: supportsCurrency && cell.format === "currency" ? currency : cell.currency })
                               : cell}
                           </td>
                         ))}

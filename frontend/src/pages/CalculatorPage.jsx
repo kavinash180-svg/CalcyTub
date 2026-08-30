@@ -82,6 +82,15 @@ export default function CalculatorPage() {
       <header className="mb-6">
         <h1 className="font-display text-3xl sm:text-4xl font-semibold">{calc.name}</h1>
         <p className="mt-2 text-muted-foreground max-w-2xl">{calc.shortDescription}</p>
+        <div className="mt-3">
+          <Link
+            to={`/compare?calc=${calc.slug}`}
+            className="inline-flex items-center gap-1.5 text-sm text-primary hover:underline"
+            data-testid="compare-link"
+          >
+            Compare two scenarios →
+          </Link>
+        </div>
       </header>
 
       <CalculatorRenderer calc={calc} />

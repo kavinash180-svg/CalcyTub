@@ -43,6 +43,10 @@ const CALC_ICONS = {
   "fd-calculator": PiggyBank,
   "gst-calculator": Receipt,
   "mortgage-decision-calculator": ShieldCheck,
+  "compound-interest-calculator": TrendingUp,
+  "simple-interest-calculator": Calculator,
+  "home-loan-prepayment-calculator": RefreshCw,
+  "loan-eligibility-calculator": Wallet,
 
   // Math
   "percentage-calculator": Percent,

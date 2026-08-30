@@ -141,6 +141,26 @@
     <changefreq>weekly</changefreq>
   </url>
   <url>
+    <loc>https://calcytub.com/compound-interest-calculator</loc>
+    <priority>0.8</priority>
+    <changefreq>weekly</changefreq>
+  </url>
+  <url>
+    <loc>https://calcytub.com/simple-interest-calculator</loc>
+    <priority>0.8</priority>
+    <changefreq>weekly</changefreq>
+  </url>
+  <url>
+    <loc>https://calcytub.com/home-loan-prepayment-calculator</loc>
+    <priority>0.8</priority>
+    <changefreq>weekly</changefreq>
+  </url>
+  <url>
+    <loc>https://calcytub.com/loan-eligibility-calculator</loc>
+    <priority>0.8</priority>
+    <changefreq>weekly</changefreq>
+  </url>
+  <url>
     <loc>https://calcytub.com/bmi-calculator</loc>
     <priority>0.8</priority>
     <changefreq>weekly</changefreq>

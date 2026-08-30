@@ -176,10 +176,31 @@ export const chemistryCalculators = [
     compute: ({ H }) => {
       if (H <= 0) throw new Error("[H⁺] must be positive.");
       const pH = -Math.log10(H);
+      const nature = pH < 6.9 ? "Acidic" : pH > 7.1 ? "Alkaline (basic)" : "Neutral";
       return {
         results: [
           { label: "pH", value: pH, format: "number", primary: true },
-          { label: "Nature", value: pH < 7 ? "Acidic" : pH > 7 ? "Basic (alkaline)" : "Neutral" },
+          { label: "Nature", value: nature },
+        ],
+        extras: [
+          {
+            type: "referenceRange",
+            data: {
+              title: "pH Reference Range",
+              value: pH,
+              unit: "",
+              scaleMin: 0,
+              scaleMax: 14,
+              active: nature.split(" ")[0],
+              ranges: [
+                { label: "Acidic", min: 0, max: 6.9, tone: "warn" },
+                { label: "Neutral", min: 6.9, max: 7.1, tone: "good" },
+                { label: "Alkaline", min: 7.1, max: 14, tone: "info" },
+              ],
+              interpretation:
+                "Pure water at 25 °C has pH ≈ 7. Below 7 is acidic, above 7 is alkaline (basic). The scale is logarithmic — each unit represents a 10× change in [H⁺].",
+            },
+          },
         ],
       };
     },

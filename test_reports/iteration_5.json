@@ -1,0 +1,36 @@
+{
+  "summary": "Iteration 5 testing: 4 new finance calculators (compound-interest, simple-interest, home-loan-prepayment, loan-eligibility), referenceRange extras on BMI + pH (all 8 BMI boundary transitions), new /compare page (nav, dropdown, deep-link, per-panel independence), listing/sitemap/icons, regressions (BMI, mortgage-decision, home-loan-emi, mortgage, theme toggle, header search, legacy URL redirect) and mobile 375x800. Backend pytest suite: 23/23 passed (no new endpoints). All math independently verified with a Node script (/app/tests/expected2.mjs). No critical failures found; only 4 minor content/SEO/labelling nits.",
+  "backend_issues": {"critical": [], "minor": []},
+  "frontend_issues": {
+    "ui_bugs": [
+      {"component": "BMI Calculator results", "issue": "Label inconsistency: primary result 'Category' shows WHO-lite labels ('Normal weight', 'Obesity') while the reference scale on the same page shows 'Healthy', 'Obesity Class 1/2/3'. Two different taxonomies for the same value.", "selector": "[data-testid=reference-active] vs Results Category tile", "priority": "LOW"},
+      {"component": "pH ReferenceScale legend", "issue": "Legend reads 'Acidic < 6.9' / 'Neutral 6.9 - 7.1' but interpretation text below says 'Below 7 is acidic, above 7 is alkaline' — pH 6.95 would be labelled Neutral, contradicting the text. Consider Neutral = exactly 7 (or state the +/-0.1 tolerance).", "selector": "[data-testid=reference-scale]", "priority": "LOW"}
+    ],
+    "integration_issues": [],
+    "design_issues": [
+      {"screen": "Content copy of new calculators", "issues": ["compound-interest-calculator workedExample says future value with $100/mo is 'approx $40,522'; actual computed output is $40,491.01 (ordinary annuity). Update copy.", "home-loan-prepayment-calculator workedExample says '(reduce tenure) cuts about 3 years and saves approx Rs 6+ lakh'; actual output is 4.2 years / Rs 9,77,109.34 saved. Update copy."]},
+      {"screen": "sitemap.xml", "issues": ["Sitemap has 56 URLs and contains all 4 new calculators, but the new /compare page is NOT in the sitemap — add it for SEO."]}
+    ]
+  },
+  "test_report_links": ["/app/backend/tests/backend_test.py", "/app/test_reports/pytest/pytest_results.xml", "/app/tests/expected2.mjs"],
+  "action_items": [
+    "Fix inaccurate workedExample text in compound-interest-calculator ($40,491.01) and home-loan-prepayment-calculator (4.2 yrs / Rs 9.77 lakh)",
+    "Add /compare to sitemap.xml",
+    "Align BMI primary 'Category' labels with the reference-range labels (Healthy / Obesity Class 1-3)",
+    "Optionally tighten pH Neutral band definition to match the interpretation text"
+  ],
+  "critical_code_review_comments": [
+    "DecisionExtras.ReferenceScale: activeRange lookup uses value>=min && value<max, which is correct for closed-open bands; top band (BMI max 100 / pH 14) relies on fallback — verified working for value exactly 40 and 14.",
+    "ReferenceScale legend formatting special-cases r.max === 100 to print '>= min' — this is BMI-specific magic; prefer an explicit openEnded flag per range so other calculators with a real max of 100 (e.g. percentage scales) don't render wrong labels.",
+    "ComparePage mutates the existing URLSearchParams object (sp.set then setSp(sp)); works but prefer creating a new params object to avoid stale-ref issues.",
+    "ComparePage keeps only local `slug` state — browser back/forward changing ?calc does not update the panels (state not synced from searchParams). Low impact, but a useEffect on sp.get('calc') would fix it."
+  ],
+  "updated_files": ["/app/tests/expected2.mjs (new independent math verification script)", "/app/test_reports/iteration_5.json"],
+  "success_rate": {"backend": "100% (23/23 pytest)", "frontend": "100% of functional test cases passed; 4 minor content/label nits"},
+  "seed_data_creation": "None required (all client-side math, no new backend endpoints)",
+  "should_call_test_agent_after_fix": false,
+  "should_main_agent_self_test": true,
+  "test_credentials": "Not needed this iteration (no admin flows tested)",
+  "context_for_next_testing_agent": "Verified values: compound-interest defaults FV $22,196.40 (contrib 0) and $40,491.01 (contrib $100/mo, invested $22,000, interest $18,491.01); simple-interest 3,000/13,000; prepayment reduce-tenure -> 10.8 yrs (130 mo), reduced 4.2 yrs, EMI Rs 29,542.19, interest saved Rs 9,77,109.34; reduce-EMI -> new EMI Rs 24,618.49, savings Rs 4,923.70/mo, interest saved Rs 3,86,265.60; loan eligibility Rs 51,85,387.79 with max EMI Rs 45,000. BMI boundary matrix (weights at 170 cm): 53.176->Underweight, 53.465->Healthy, 71.961->Healthy, 72.25->Overweight, 86.411->Overweight, 86.7->Obesity Class 1, 101.15->Obesity Class 2, 115.6->Obesity Class 3 — all PASS. pH 1e-3/1e-7/1e-11 -> Acidic/Neutral/Alkaline PASS. /compare: header nav, ?calc deep-link, dropdown update (URL syncs), independent A/B results (mortgage 400k -> $2,514.28 vs 600k -> $4,178.42), compare-link is a real <a href=/compare?calc=...>, label[for=compare-calc] present, marker/segments aria-hidden. Mobile 375x800: no horizontal overflow on /bmi-calculator or /compare; compare panels stack vertically. Card testid pattern is calc-card-{slug} (not calculator-card-*). /finance shows 13 finance calculators (12 in finance.js + mortgage-decision-calculator), not 12 as stated in the request — this is a request miscount, not a bug.",
+  "rca_of_the_issue": "No functional defects. The two copy mismatches stem from workedExample strings being hand-written estimates rather than derived from the compute() output; the sitemap gap is because /compare was not added to the sitemap generator's route list."
+}

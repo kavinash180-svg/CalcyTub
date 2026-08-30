@@ -11,6 +11,7 @@ import AdminPage from "@/pages/AdminPage";
 import NotFoundPage from "@/pages/NotFoundPage";
 import SlugResolver from "@/components/SlugResolver";
 import LegacyRedirect from "@/components/LegacyRedirect";
+import ComparePage from "@/pages/ComparePage";
 
 export default function App() {
   return (
@@ -26,6 +27,7 @@ export default function App() {
           <Route path="/contact" element={<ContactPage />} />
           <Route path="/legal/:slug" element={<LegalPage />} />
           <Route path="/admin" element={<AdminPage />} />
+          <Route path="/compare" element={<ComparePage />} />
 
           {/* Legacy URLs — 301-equivalent client redirects */}
           <Route path="/calculator/:slug" element={<LegacyRedirect />} />

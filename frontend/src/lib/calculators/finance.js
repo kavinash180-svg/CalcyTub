@@ -421,4 +421,203 @@ export const financeCalculators = [
     related: ["percentage-calculator", "discount-calculator"],
     disclaimer: "finance",
   },
+
+  {
+    slug: "compound-interest-calculator",
+    name: "Compound Interest Calculator",
+    category: "finance",
+    shortDescription: "Compute future value and interest earned with any compounding frequency plus optional monthly contributions.",
+    seoTitle: "Compound Interest Calculator (with Monthly Contributions) | CalcyTub",
+    metaDescription: "Calculate compound interest and future value with any compounding frequency and optional monthly contributions.",
+    keywords: ["compound interest", "future value", "interest calculator"],
+    currency: "USD",
+    inputs: [
+      { key: "principal", label: "Principal", type: "number", prefix: "$", defaultValue: 10000 },
+      { key: "rate", label: "Annual Interest Rate", type: "number", suffix: "%", defaultValue: 8 },
+      { key: "years", label: "Years", type: "number", suffix: "years", defaultValue: 10 },
+      {
+        key: "freq", label: "Compounding", type: "select", defaultValue: 12,
+        options: [
+          { value: 1, label: "Yearly" }, { value: 2, label: "Half-Yearly" },
+          { value: 4, label: "Quarterly" }, { value: 12, label: "Monthly" },
+          { value: 365, label: "Daily" },
+        ],
+      },
+      { key: "contribution", label: "Monthly Addition (optional)", type: "number", prefix: "$", defaultValue: 0 },
+    ],
+    compute: ({ principal, rate, years, freq, contribution }) => {
+      if (principal < 0 || years <= 0) throw new Error("Enter positive principal and years.");
+      const n = Number(freq);
+      const r = rate / 100;
+      const A = principal * Math.pow(1 + r / n, n * years);
+      let contribFV = 0;
+      if (contribution > 0) {
+        const rm = r / 12;
+        const months = years * 12;
+        contribFV = rm === 0 ? contribution * months : contribution * ((Math.pow(1 + rm, months) - 1) / rm);
+      }
+      const total = A + contribFV;
+      const invested = principal + contribution * years * 12;
+      return {
+        results: [
+          { label: "Future Value", value: total, format: "currency", currency: "USD", primary: true },
+          { label: "Total Invested", value: invested, format: "currency", currency: "USD" },
+          { label: "Interest Earned", value: total - invested, format: "currency", currency: "USD" },
+        ],
+      };
+    },
+    formula: "A = P × (1 + r/n)ⁿᵗ ; monthly contributions FV = C × ((1 + r/12)ᵐ − 1) / (r/12)",
+    howItWorks: "Compound interest reinvests earnings so subsequent periods earn interest on both principal and prior interest. Monthly contributions are treated as an ordinary annuity.",
+    workedExample: "$10,000 at 8% compounded monthly for 10 years → ≈ $22,196; add $100/mo and future value ≈ $40,522.",
+    assumptions: ["Rate and contribution stay constant.", "Ignores taxes and fees."],
+    faq: [
+      { q: "Compound vs simple interest?", a: "Compound earns interest on interest; simple only on the original principal." },
+      { q: "Does compounding frequency matter?", a: "Yes — more frequent compounding gives slightly higher future value at the same nominal rate." },
+    ],
+    related: ["simple-interest-calculator", "sip-calculator", "fd-calculator"],
+    disclaimer: "finance",
+  },
+
+  {
+    slug: "simple-interest-calculator",
+    name: "Simple Interest Calculator",
+    category: "finance",
+    shortDescription: "Compute simple interest and maturity amount with the classic I = P·r·t formula.",
+    seoTitle: "Simple Interest Calculator (I = P·r·t) | CalcyTub",
+    metaDescription: "Compute simple interest and maturity amount for any principal, rate and time period.",
+    keywords: ["simple interest", "interest calculator"],
+    currency: "USD",
+    inputs: [
+      { key: "principal", label: "Principal", type: "number", prefix: "$", defaultValue: 10000 },
+      { key: "rate", label: "Annual Interest Rate", type: "number", suffix: "%", defaultValue: 6 },
+      { key: "years", label: "Time", type: "number", suffix: "years", defaultValue: 5 },
+    ],
+    compute: ({ principal, rate, years }) => {
+      const interest = (principal * rate * years) / 100;
+      return {
+        results: [
+          { label: "Interest", value: interest, format: "currency", currency: "USD", primary: true },
+          { label: "Maturity Amount", value: principal + interest, format: "currency", currency: "USD" },
+        ],
+      };
+    },
+    formula: "I = P × r × t",
+    howItWorks: "Simple interest is calculated only on the original principal. It does not compound.",
+    workedExample: "$10,000 at 6% for 5 years → interest $3,000; maturity $13,000.",
+    assumptions: ["Rate stays constant.", "No compounding."],
+    faq: [{ q: "When is simple interest used?", a: "Short-term personal loans, some auto loans, treasury bills and educational examples." }],
+    related: ["compound-interest-calculator", "fd-calculator"],
+    disclaimer: "finance",
+  },
+
+  {
+    slug: "home-loan-prepayment-calculator",
+    name: "Home Loan Prepayment Calculator",
+    category: "finance",
+    shortDescription: "See how a one-time prepayment reduces tenure or EMI and how much interest you save.",
+    seoTitle: "Home Loan Prepayment Calculator (India) | CalcyTub",
+    metaDescription: "Calculate interest saved and new tenure or EMI when you make a one-time prepayment on your home loan.",
+    keywords: ["home loan prepayment", "part payment", "loan prepayment"],
+    currency: "INR",
+    inputs: [
+      { key: "balance", label: "Current Loan Balance", type: "number", prefix: "₹", defaultValue: 3000000 },
+      { key: "rate", label: "Interest Rate", type: "number", suffix: "%", defaultValue: 8.5 },
+      { key: "years", label: "Remaining Tenure", type: "number", suffix: "years", defaultValue: 15 },
+      { key: "prepay", label: "Prepayment Amount", type: "number", prefix: "₹", defaultValue: 500000 },
+      {
+        key: "strategy", label: "Strategy", type: "select", defaultValue: "tenure",
+        options: [
+          { value: "tenure", label: "Reduce tenure (keep EMI same)" },
+          { value: "emi", label: "Reduce EMI (keep tenure same)" },
+        ],
+      },
+    ],
+    compute: ({ balance, rate, years, prepay, strategy }) => {
+      if (prepay >= balance) throw new Error("Prepayment cannot equal or exceed current balance.");
+      const r = rate / 100 / 12;
+      const n = Math.round(years * 12);
+      const emi = r === 0 ? balance / n : (balance * r * Math.pow(1 + r, n)) / (Math.pow(1 + r, n) - 1);
+      const totalWithout = emi * n;
+      const remaining = balance - prepay;
+      if (strategy === "emi") {
+        const newEmi = r === 0 ? remaining / n : (remaining * r * Math.pow(1 + r, n)) / (Math.pow(1 + r, n) - 1);
+        const totalWith = newEmi * n + prepay;
+        return {
+          results: [
+            { label: "New Monthly EMI", value: newEmi, format: "currency", currency: "INR", primary: true },
+            { label: "Original EMI", value: emi, format: "currency", currency: "INR" },
+            { label: "Monthly Savings", value: emi - newEmi, format: "currency", currency: "INR" },
+            { label: "Total Interest Saved", value: totalWithout - totalWith, format: "currency", currency: "INR" },
+          ],
+        };
+      }
+      // Reduce tenure: solve for months so that PV(payment stream) = remaining
+      // n' = ln(EMI / (EMI - r·B')) / ln(1+r)  (r > 0)
+      let newMonths;
+      if (r === 0) newMonths = Math.ceil(remaining / emi);
+      else if (emi <= r * remaining) newMonths = n; // pathological
+      else newMonths = Math.ceil(Math.log(emi / (emi - r * remaining)) / Math.log(1 + r));
+      const totalWith = emi * newMonths + prepay;
+      return {
+        results: [
+          { label: "New Tenure", value: `${(newMonths / 12).toFixed(1)} years (${newMonths} months)`, primary: true },
+          { label: "Tenure Reduced By", value: `${((n - newMonths) / 12).toFixed(1)} years`, primary: true },
+          { label: "EMI (unchanged)", value: emi, format: "currency", currency: "INR" },
+          { label: "Total Interest Saved", value: totalWithout - totalWith, format: "currency", currency: "INR" },
+        ],
+      };
+    },
+    formula: "n' = ln(EMI / (EMI − r · B')) / ln(1 + r) where B' = remaining balance after prepayment",
+    howItWorks: "Prepaying the loan reduces the outstanding balance. You can either keep the EMI the same (which shortens the tenure) or shorten your tenure calculation and lower the EMI. Reducing tenure usually saves more interest overall.",
+    workedExample: "₹30 lakh balance at 8.5% for 15 years: EMI ≈ ₹29,542. A ₹5 lakh prepayment (reduce tenure) cuts about 3 years and saves ≈ ₹6+ lakh interest.",
+    assumptions: ["Fixed rate.", "No prepayment fees.", "Prepayment is applied immediately."],
+    faq: [
+      { q: "Reduce tenure or reduce EMI — which is better?", a: "Reducing tenure typically saves more total interest. Reducing EMI improves monthly cash-flow." },
+      { q: "Are prepayment charges included?", a: "No. Many Indian banks charge zero on floating-rate home loans; verify with your lender." },
+    ],
+    related: ["home-loan-emi-calculator", "mortgage-decision-calculator", "refinance-calculator"],
+    disclaimer: "finance",
+  },
+
+  {
+    slug: "loan-eligibility-calculator",
+    name: "Loan Eligibility Calculator",
+    category: "finance",
+    shortDescription: "Estimate the maximum home loan amount a lender may offer based on income, obligations and FOIR.",
+    seoTitle: "Loan Eligibility Calculator (Home Loan / Personal Loan) | CalcyTub",
+    metaDescription: "Estimate maximum loan amount based on monthly income, existing EMIs, FOIR cap, rate and tenure.",
+    keywords: ["loan eligibility", "home loan eligibility", "foir"],
+    currency: "INR",
+    inputs: [
+      { key: "income", label: "Monthly Net Income", type: "number", prefix: "₹", defaultValue: 100000 },
+      { key: "obligations", label: "Existing Monthly EMI", type: "number", prefix: "₹", defaultValue: 5000 },
+      { key: "foir", label: "FOIR Cap", type: "number", suffix: "%", defaultValue: 50 },
+      { key: "rate", label: "Interest Rate", type: "number", suffix: "%", defaultValue: 8.5 },
+      { key: "years", label: "Tenure", type: "number", suffix: "years", defaultValue: 20 },
+    ],
+    compute: ({ income, obligations, foir, rate, years }) => {
+      if (income <= 0) throw new Error("Income must be positive.");
+      const maxEmi = Math.max(0, income * (foir / 100) - obligations);
+      const r = rate / 100 / 12;
+      const n = Math.round(years * 12);
+      const loan = r === 0 ? maxEmi * n : maxEmi * (Math.pow(1 + r, n) - 1) / (r * Math.pow(1 + r, n));
+      return {
+        results: [
+          { label: "Estimated Loan Eligibility", value: loan, format: "currency", currency: "INR", primary: true },
+          { label: "Max EMI You Can Afford", value: maxEmi, format: "currency", currency: "INR" },
+          { label: "FOIR Applied", value: foir, format: "percent" },
+        ],
+      };
+    },
+    formula: "Max EMI = Income × FOIR − Existing EMI ; Loan = EMI × ((1+r)ⁿ − 1) / (r × (1+r)ⁿ)",
+    howItWorks: "Lenders cap the share of your income that goes to EMIs. This share is often called FOIR (Fixed Obligations to Income Ratio) and is commonly 40–65% depending on income slab and lender.",
+    workedExample: "₹1,00,000 income, ₹5,000 existing EMI, FOIR 50%, 8.5% for 20 years → max EMI ₹45,000 → loan ≈ ₹52 lakh.",
+    assumptions: ["Actual eligibility depends on credit score, employment, property value and lender policy.", "FOIR limits differ by lender."],
+    faq: [
+      { q: "What FOIR do banks use?", a: "Commonly 40% for lower incomes and up to 65% for higher incomes; verify with your lender." },
+      { q: "Is this a loan offer?", a: "No. It is an educational estimate — actual offers depend on the lender's underwriting." },
+    ],
+    related: ["home-loan-emi-calculator", "mortgage-decision-calculator", "personal-loan-emi-calculator"],
+    disclaimer: "finance",
+  },
 ];

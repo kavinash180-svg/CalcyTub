@@ -29,10 +29,39 @@ export const healthCalculators = [
       else if (bmi < 25) category = "Normal weight";
       else if (bmi < 30) category = "Overweight";
       else category = "Obesity";
+      const bmiCategory =
+        bmi < 18.5 ? "Underweight" :
+        bmi < 25 ? "Healthy" :
+        bmi < 30 ? "Overweight" :
+        bmi < 35 ? "Obesity Class 1" :
+        bmi < 40 ? "Obesity Class 2" : "Obesity Class 3";
       return {
         results: [
           { label: "BMI", value: bmi, format: "number", primary: true },
           { label: "Category", value: category, primary: true },
+        ],
+        extras: [
+          {
+            type: "referenceRange",
+            data: {
+              title: "BMI Reference Range (WHO, adults)",
+              value: bmi,
+              unit: "kg/m²",
+              scaleMin: 15,
+              scaleMax: 45,
+              active: bmiCategory,
+              ranges: [
+                { label: "Underweight", min: 0, max: 18.5, tone: "info" },
+                { label: "Healthy", min: 18.5, max: 25, tone: "good" },
+                { label: "Overweight", min: 25, max: 30, tone: "warn" },
+                { label: "Obesity Class 1", min: 30, max: 35, tone: "bad" },
+                { label: "Obesity Class 2", min: 35, max: 40, tone: "bad" },
+                { label: "Obesity Class 3", min: 40, max: 100, tone: "bad" },
+              ],
+              interpretation:
+                "BMI is a screening measure for adults. It does not consider muscle mass, bone density, age or sex, and is not a medical diagnosis. Athletes and older adults in particular should interpret with care.",
+            },
+          },
         ],
       };
     },

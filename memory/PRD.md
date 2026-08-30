@@ -52,6 +52,18 @@ Build a fast, SEO-first, mobile-first calculator platform called **CalcyTub** wi
 - Redesigned `CalculatorCard` (icon badge + category chip + Calculate arrow), `CategoryPage`/`CategoriesIndex` with icons + counts, redesigned homepage hero with large search + live results + quick category rail + stat pills.
 - **Testing**: iteration_4 → 100% pass (20/20 frontend scenarios + 23/23 backend).
 
+### Iteration 5 — 4 new finance calcs + Reference Range + Compare page
+- 4 new finance calculators: Compound Interest, Simple Interest, Home Loan Prepayment, Loan Eligibility (sitemap now 56 URLs, finance category has 12 calcs).
+- New `referenceRange` extras type — reusable via existing DecisionExtras pipeline. Attached to BMI (WHO 6-bucket scale with obesity classes) and pH (Acidic/Neutral/Alkaline 0-14 scale). Visual: colored horizontal bar + marker + interpretation.
+- New `/compare` page — pick any calculator, run Scenario A vs Scenario B side-by-side using the existing reusable CalculatorRenderer. Compare link on every calc page + Compare in header nav.
+
+### Iteration 6-7 — Global currency system
+- New `lib/currency.js` with 13 currencies (USD, INR, EUR, GBP, CAD, AUD, AED, SGD, JPY, CNY, NZD, CHF, ZAR), locale-aware `Intl.NumberFormat`.
+- Currency selector automatically appears on any calculator with money inputs (auto-detected via `prefix` matching a known symbol, or explicit `moneyField: true`). Non-money calculators (BMI/pH/percentage) have no selector.
+- Display currency only — never converts numeric inputs (spec requirement). Persisted in localStorage `calcytub_currency`.
+- Zero calculator-definition edits (detection is prefix-based).
+- **Testing**: iteration_6 → 100% pass, iteration_7 → hydration warning bug-fix verified.
+
 ## Prioritized Backlog
 ### P1 (SEO polish, quick wins)
 - Move sitemap host to env var (currently hardcoded `https://calcytub.com`) so preview/staging generate the correct host.
