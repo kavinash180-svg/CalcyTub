@@ -1,0 +1,51 @@
+{
+  "summary": "Iteration 4 focused on (A) SEO restructure (clean URLs, legacy redirects, JSON-LD, robots.txt, sitemap.xml, meta/OG/Twitter) and (B) UI visual refinement (lucide icons on calc/category cards, new homepage hero search). Backend regression suite re-run: 23/23 pytest tests passed. Frontend: all 20 requested scenarios verified via Playwright on the public URL — every one passed, including calculator regressions (EMI Rs.43,391.16, MDC $2,528.27, BMI 22.49 Normal), mobile 375x800 (no horizontal scroll, sw=cw=375), theme toggle + dark default after localStorage clear, header search dialog navigating to clean /slug URLs, hero live search dropdown (4 results for 'mortgage', click + Enter both navigate), legacy /calculator/:slug and /category/:slug redirects, article Article+BreadcrumbList JSON-LD (seed article created and deleted via admin API). Only minor SEO-quality observations found; no functional defects.",
+  "backend_issues": {"critical": [], "minor": []},
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": []
+  },
+  "seo_observations_minor": [
+    {"item": "/robots.txt", "issue": "Platform prepends its own Cloudflare content-signals block containing a 'User-agent: *' + 'Allow: /' group, so the served file has TWO 'User-agent: *' groups. Google merges same-UA groups (so 'Disallow: /admin' still applies) but some crawlers only honour the first group -> /admin may be crawled. Consider merging into a single group at build time."},
+    {"item": "/robots.txt", "issue": "'Sitemap: /sitemap.xml' is a relative path; the sitemaps protocol requires an absolute URL (e.g. https://calcytub.com/sitemap.xml). Several crawlers ignore relative sitemap directives."},
+    {"item": "/sitemap.xml", "issue": "All 52 <loc> entries are hardcoded to https://calcytub.com/. Correct if that is the production domain, but the preview/staging host will serve a sitemap for a different origin (cross-domain sitemap = ignored). Consider generating the host from an env var."},
+    {"item": "useSEO.js", "issue": "og:type is hardcoded to 'website' for every page, including /articles/:slug where og:type should be 'article' (plus article:published_time / author). Minor rich-result loss."},
+    {"item": "SSR/JS-only SEO", "issue": "Title, meta, canonical and all JSON-LD are injected client-side only (index.html ships generic tags). Non-JS crawlers/social scrapers (Facebook, LinkedIn, X) will read the static index.html, not per-page tags. Prerender/SSG for the 52 sitemap URLs would materially improve SEO impact."},
+    {"item": "useSEO.js effect deps", "issue": "jsonLd/keywords are new array/object literals each render, so the effect re-runs on every render and removes+re-appends all <script data-calcytub-jsonld> tags. Harmless today but wasteful; memoize with useMemo."},
+    {"item": "ArticlePage", "issue": "Pre-existing: article content is rendered as plain text, so markdown '# Hello' displays literally instead of a heading. Not part of this iteration's scope but visible on /articles/:slug."}
+  ],
+  "verified_passing": [
+    "/home-loan-emi-calculator: title 'Home Loan EMI Calculator (India) - CalcyTub', canonical ends /home-loan-emi-calculator, robots 'index,follow,max-snippet:-1,max-image-preview:large', og:title/description/url/type, twitter:card=summary",
+    "3 JSON-LD blocks on calc page: WebApplication + BreadcrumbList (Home>Categories>Finance & Mortgage>Home Loan EMI Calculator) + FAQPage (3 questions)",
+    "/finance renders Finance & Mortgage with 9 calc cards; canonical /finance; BreadcrumbList Home>Categories>Finance & Mortgage",
+    "Homepage WebSite JSON-LD with SearchAction potentialAction (urlTemplate /calculators?q={search_term_string})",
+    "/calculator/mortgage-calculator -> /mortgage-calculator (renders Mortgage Calculator); /category/math -> /math (Math Calculators)",
+    "Trailing slash /home-loan-emi-calculator/ renders correctly; unknown /this-slug-does-not-exist renders 404 page",
+    "/robots.txt 200 with Disallow: /admin and Sitemap directive; /sitemap.xml 200, valid urlset, 52 <loc> incl /, /calculators, /categories, /finance, /home-loan-emi-calculator, /bmi-calculator, /mortgage-decision-calculator",
+    "Article JSON-LD: /articles/seo-test-article had ['Article','BreadcrumbList'] (Home>Articles>title)",
+    "calc-card-* contain lucide <svg> in rounded badge + aria-hidden span, category chip 'FINANCE & MORTGAGE', name, description, 'Calculate' action; aria-label='Open {name}'",
+    "cat-card-finance/math/physics/chemistry/health each have svg + count badge (9/8/5/4/4 CALCS)",
+    "Hero search: input visible with aria-label, 'mortgage' -> 4 dropdown results, click navigates to /mortgage-calculator, Enter with 'bmi' navigates to /bmi-calculator",
+    "Header search dialog (open-search-btn -> search-dialog -> search-input) returns results and navigates to /percentage-calculator (no /calculator/ prefix)",
+    "theme-toggle switches html class dark -> '' ; after localStorage.clear() + reload, class is 'dark' (dark default preserved)",
+    "Regression: EMI Rs.43,391.16; mortgage-decision $2,528.27 P&I with DTI/LTV/score/factor extras; BMI 170cm/65kg = 22.49 Normal",
+    "Mobile 375x800: scrollWidth == clientWidth (375), hero search stacked, icons visible, header brand+search+theme+hamburger present"
+  ],
+  "test_report_links": ["/app/backend/tests/backend_test.py", "/app/test_reports/pytest/pytest_results_it4.xml"],
+  "action_items": [
+    "Optional SEO polish: absolute Sitemap URL in robots.txt, single User-agent:* group, env-driven sitemap host, og:type='article' on article pages, memoize useSEO jsonLd, consider prerendering for JS-less crawlers"
+  ],
+  "critical_code_review_comments": [
+    "No functional defects found. SlugResolver ordering (categories before calculators, static routes declared before /:slug) is correct; LegacyRedirect preserves search+hash and uses replace.",
+    "SEO metadata is 100% client-side; without prerender/SSG the clean-URL + JSON-LD work will not be seen by non-JS crawlers or social scrapers — highest-leverage follow-up."
+  ],
+  "updated_files": [],
+  "success_rate": {"backend": "100%", "frontend": "100%"},
+  "seed_data_creation": "Created admin article slug 'seo-test-article' (TEST_ prefixed title) for Article JSON-LD test; deleted afterwards and verified public GET returns 404.",
+  "should_call_test_agent_after_fix": false,
+  "should_main_agent_self_test": true,
+  "test_credentials": "admin / changeme123 (from /app/memory/test_credentials.md); admin login returns 'access_token' (not 'token')",
+  "context_for_next_testing_agent": "Public URL from /app/frontend/.env is https://quick-calc-1172.preview.emergentagent.com (differs from the URL quoted in the review request — always read .env). Backend suite: pytest /app/backend/tests/backend_test.py (23 tests, all green). Clean URLs (/slug), legacy redirects, JSON-LD, robots, sitemap, icons, hero search, theme toggle and all calculator regressions verified in iteration_4. Remaining open items are SEO-quality-only (relative sitemap directive, hardcoded calcytub.com host, og:type on articles, client-side-only meta).",
+  "rca_of_the_issue": "N/A - no failures. Note during testing: header search dialog input must be targeted via [data-testid=search-input] inside [data-testid=search-dialog]; a generic placeholder selector matches the new hero input instead."
+}

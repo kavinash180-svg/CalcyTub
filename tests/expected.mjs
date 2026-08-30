@@ -1,0 +1,14 @@
+const emi = (P, r, n) => (r === 0 ? P / n : (P * r * Math.pow(1 + r, n)) / (Math.pow(1 + r, n) - 1));
+const f = (x) => x.toFixed(2);
+console.log("home 8.5:", f(emi(5000000, 8.5 / 1200, 240)));
+console.log("home 8.46:", f(emi(5000000, 8.46 / 1200, 240)));
+console.log("home 8.75:", f(emi(5000000, 8.75 / 1200, 240)));
+console.log("home amt 4523456 @8.5:", f(emi(4523456, 8.5 / 1200, 240)));
+console.log("mortgage P&I 6.35:", f(emi(320000, 6.35 / 1200, 360)));
+console.log("amort 5.875:", f(emi(320000, 5.875 / 1200, 360)));
+const cur = emi(250000, 7.15 / 1200, 300), nw = emi(250000, 5.375 / 1200, 300);
+console.log("refi cur:", f(cur), "new:", f(nw), "savings:", f(cur - nw));
+console.log("personal 11.35:", f(emi(500000, 11.35 / 1200, 36)));
+const r = 12.35 / 1200, n = 120;
+console.log("sip 12.35:", f(10000 * ((Math.pow(1 + r, n) - 1) / r) * (1 + r)));
+console.log("fd 6.85:", f(100000 * Math.pow(1 + 0.0685 / 4, 20)));

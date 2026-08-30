@@ -1,0 +1,45 @@
+{
+  "summary": "First full test run of CalcyTub. Backend: created /app/backend/tests/backend_test.py (23 pytest cases) covering health, public content (overrides/articles/settings), admin JWT auth (valid/invalid/no-token/bad-token), overrides PUT/GET/DELETE, articles POST/PUT/DELETE + publish toggle + duplicate-slug + 404s, settings PUT with restore — 23/23 passed. Frontend: verified homepage/hero/popular cards, header search dialog -> navigation, /calculators lists exactly 30 calculators, /categories (10 cards incl. coming-soon) and /category/finance (8 calcs), all 30 calculator pages compute with correct math for the specified example values, reset button, error state (a=0 quadratic), disabled Calculate on empty input, Formula/How It Works/Worked Example/FAQ/Related sections, all 5 legal pages + about + contact (mailto only, no form), 404 page, admin login (wrong creds error, valid login, tabs, sign out clears token), calculator override saved in admin and reflected on public /calculator/bmi-calculator (incl. document.title from seoTitle), article create -> visible on /articles and /articles/test-qa-article, and mobile (390px) header collapse/hamburger/stacked inputs/no horizontal overflow. Test data (override + article) was cleaned up afterwards. Math verified: EMI ₹43,391.16; BMI 22.49 Normal; 12.5%; H2SO4 98.07 g/mol; speed 10 m/s (36 km/h); pH 4 Acidic; roots 3 & 2; SIP ₹23,23,390.76; FD ₹1,41,477.82; mortgage P&I $2,022.62 + tax $366.67 + PMI $0 (LTV 80%); BMR 1568/TDEE 2430; Devine 65.94kg; fraction 5/6; gcd 6/lcm 36; density 1000; dilution V2=1; personal EMI ₹16,607.15 — all correct.",
+  "backend_issues": {
+    "critical": [],
+    "minor": [
+      {"endpoint": "GET /robots.txt (backend @app route)", "issue": "Dead code via public ingress — only /api/* is routed to :8001, so the FastAPI robots.txt is never served publicly. Public /robots.txt is served by /app/frontend/public/robots.txt (Emergent default content-signals file) which does NOT contain 'Disallow: /admin'. Either move the route under /api or write the desired robots.txt into frontend/public/."},
+      {"endpoint": "GET /sitemap.xml", "issue": "No sitemap exists — public /sitemap.xml returns the SPA index.html (200 HTML). robots.txt references /sitemap.xml. For an SEO-first site a real sitemap (build-time generated from ALL_CALCULATORS + articles) is missing."},
+      {"endpoint": "PUT /api/admin/overrides", "issue": "No validation that slug corresponds to a real calculator and no whitelist of override field names — any arbitrary key/value can be persisted into overrides.json."}
+    ]
+  },
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [
+      {"flow": "Site settings -> public site", "issue": "settings.adsenseClient is editable in admin but never consumed anywhere in the frontend (no AdSense script injection). siteName/tagline are only used on the About page; header/footer/contact page use hardcoded strings, so changing settings has almost no visible effect.", "affected_selectors": ["[data-testid=\"ad-slot\"]"]},
+      {"flow": "Ad placeholders", "issue": "Only one [data-testid=ad-slot] exists and only on calculator detail pages. Homepage, category, calculators index and article pages have zero ad placeholders despite the AdSense monetization goal.", "affected_selectors": ["[data-testid=\"ad-slot\"]"]}
+    ],
+    "design_issues": [
+      {"screen": "Calculator page (molar mass)", "issues": ["Molar mass of H2SO4 renders as 98.07 (2 decimals) while the documented/expected precision is 98.079 g/mol; chemistry results would benefit from 3-4 significant decimals."]},
+      {"screen": "SEO (all pages)", "issues": ["Meta title/description/canonical are injected client-side only (CSR React, no SSR/prerender). Titles, descriptions and canonicals were verified correct in the browser, but crawlers that do not execute JS will only see the static index.html — worth noting for an 'SEO-first' requirement."]},
+      {"screen": "Contact / short pages", "issues": ["Very little content above the footer on 1920x1080 leaves a large empty band; minor visual emptiness only, no layout break."]}
+    ]
+  },
+  "test_report_links": ["/app/backend/tests/backend_test.py", "/app/test_reports/pytest/pytest_results.xml"],
+  "action_items": [
+    "Serve robots.txt from frontend/public (including Disallow: /admin) or move the route under /api — the current backend route is unreachable publicly and the shipped robots.txt is the Emergent default.",
+    "Add a real sitemap.xml (build-time generated) since robots.txt points at it and the site is SEO-first.",
+    "Wire settings.adsenseClient into the frontend (AdSense script) and add ad-slot placeholders on homepage/category/article pages, or drop the unused setting.",
+    "Increase decimal precision for chemistry results (molar mass shows 98.07 vs 98.079).",
+    "Optional hardening: validate override slug against ALL_CALCULATORS and whitelist override field keys in PUT /api/admin/overrides."
+  ],
+  "critical_code_review_comments": [
+    "server.py: overrides/articles JSON writes are non-atomic and not lock-protected; concurrent admin writes can truncate/corrupt content files. Consider write-to-temp + os.replace.",
+    "server.py: @app.get('/robots.txt') is defined outside the /api router, so it can never be reached through the k8s ingress.",
+    "AdminPage.jsx (233 lines) mixes login, overrides, articles and settings panels in one file; splitting into components would help maintainability. Overrides panel also seeds textareas with base values, so saving persists full copies of default text as 'overrides'.",
+    "JWT is stored in localStorage; acceptable for a single-admin tool but XSS-exposed."
+  ],
+  "updated_files": ["/app/backend/tests/backend_test.py"],
+  "success_rate": {"backend": "100%", "frontend": "100%"},
+  "seed_data_creation": "Temporarily created override for bmi-calculator and article slug 'test-qa-article' via admin UI; both deleted after verification. overrides.json = {} and articles.json = [] restored. Settings tagline restored by test teardown.",
+  "should_call_test_agent_after_fix": false,
+  "should_main_agent_self_test": true,
+  "test_credentials": "/app/memory/test_credentials.md is a template with NO credentials — admin/changeme123 was taken from the review request and backend/.env. Main agent should record admin creds in that file.",
+  "context_for_next_testing_agent": "Backend regression suite: /app/backend/tests/backend_test.py (23 tests, all passing; run with `cd /app/backend && python -m pytest tests/backend_test.py -v`). It self-cleans overrides/articles/settings. All 30 calculators were computed via UI with default inputs and math verified correct. Remaining untested/low-value areas: admin article edit-in-place (only publish toggle + delete exercised via UI), keyboard '/' search shortcut, article unpublish reflected on /articles UI. Open items are SEO infra (robots.txt/sitemap.xml) and unused adsenseClient setting — no functional bugs found.",
+  "rca_of_the_issue": "robots.txt: Kubernetes ingress routes only /api/* to backend:8001; a FastAPI route registered at the app root ('/robots.txt') therefore only resolves on localhost:8001, while the public URL falls through to the CRA static file. Fix requires putting SEO files in frontend/public or namespacing them under /api."
+}

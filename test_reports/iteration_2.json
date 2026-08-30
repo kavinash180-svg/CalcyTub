@@ -1,0 +1,41 @@
+{
+  "summary": "Frontend-only verification of the interest-rate HTML5 validation popup bug fix across 8 finance calculators via Playwright on the public URL. Verified (a) no HTML5 constraint validation error is possible on any numeric input (checkValidity()==true, validationMessage empty, step='any', no min/max attributes present on any input), and (b) compute() uses the EXACT decimal entered by cross-checking every result against independently computed EMI/FV/maturity values (node script). 11/11 requested scenarios PASS plus reset regression PASS. Also tested real keyboard typing (not just fill) and edge cases.",
+  "backend_issues": {"critical": [], "minor": []},
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": [],
+    "validation_gaps": [
+      {"component": "CalculatorRenderer number input", "issue": "Removing min/max removed all bounds: entering rate -5 on home-loan-emi-calculator computes and displays 'Monthly EMI ₹12,084.53' with negative Total Interest (-₹20,99,711.85) and negative interest rows in the amortization table. Rate 0 yields ₹20,833.33 (mathematically OK). Recommend JS-level (not HTML5-attribute) validation showing a friendly inline message for out-of-range values, keeping step='any' so decimals like 8.5/8.46/5.875 stay valid.", "selector": "[data-testid=\"input-rate\"]", "priority": "MEDIUM"}
+    ]
+  },
+  "verified_cases": [
+    "home-loan-emi 5000000/8.5/20 -> ₹43,391.16 (expected 43,391.16) PASS, no popup",
+    "home-loan-emi 8.46% -> ₹43,264.66 (independently computed 43,264.66; request note said ~43,262.61 which is slightly off — formula output is correct) PASS, distinct from 8.5% value",
+    "home-loan-emi 8.75% -> ₹44,185.54 PASS",
+    "home-loan-emi arbitrary amount 4523456 @8.5% -> ₹39,255.60 PASS",
+    "mortgage-calculator rate 6.35% -> P&I $1,991.15 PASS",
+    "mortgage-amortization 5.875% -> $1,892.92 PASS",
+    "refinance 7.15% / 5.375% -> Monthly Savings $274.33 (cur 1,790.94 / new 1,516.61) PASS",
+    "personal-loan-emi 11.35% -> ₹16,452.36 PASS",
+    "sip 10000/12.35%/10y -> ₹23,72,421.10 PASS",
+    "fd 100000/6.85%/5y quarterly -> ₹1,40,438.63 PASS",
+    "Reset restores rate=8.5, amount=5000000 and clears calc-results PASS",
+    "Typed (keystroke) 8.5 -> checkValidity()=true, validationMessage='' , calculate succeeds PASS",
+    "Empty rate -> calculate-btn correctly disabled PASS",
+    "No browser dialog/validation tooltip fired on any page (dialog listener attached, zero events); no console errors"
+  ],
+  "test_report_links": ["/app/tests/expected.mjs"],
+  "action_items": ["Optional: add JS-based range validation with inline error for negative/absurd rate & amount values (keep step='any', do NOT reintroduce HTML5 min/max/step-numeric which caused the original popup bug)."],
+  "critical_code_review_comments": [
+    "finance.js input definitions still carry unused min/max/step keys that CalculatorRenderer ignores — dead metadata; either use them for soft JS validation or remove to avoid confusion.",
+    "buildAmortization loops per-month in render path; fine for 40y but consider memoizing if breakdown grows."
+  ],
+  "updated_files": [],
+  "success_rate": {"backend": "not tested (frontend-only request)", "frontend": "100% of requested bug-fix scenarios passed (11/11)"},
+  "seed_data_creation": "none",
+  "should_call_test_agent_after_fix": false,
+  "should_main_agent_self_test": true,
+  "context_for_next_testing_agent": "Bug fix (step='any', no min/max) is fully verified across all 8 finance calculators; math matches independent computation exactly. Only remaining observation is the absence of any range validation (negative rate accepted). Use data-testids input-{key} where key comes from finance.js (e.g. input-curRate, input-newRate, input-principal, input-monthly).",
+  "rca_of_the_issue": "Original popup came from HTML5 stepMismatch: step=0.05 with min=0.01 made 8.5 an invalid step value, so the browser blocked submit with a 'nearest valid value' tooltip. Fix removes min/max and sets step='any', eliminating stepMismatch/rangeUnderflow entirely — confirmed via input.checkValidity() returning true and empty validationMessage on every field."
+}

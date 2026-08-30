@@ -1,0 +1,29 @@
+{
+  "summary": "Frontend-only verification of the two new features (Mortgage Decision Analyzer calculator + dark/light theme) on the public preview URL, plus regression spot-checks of 7 existing calculators. 12 inputs render with step='any' (no HTML5 popup), Calculate produces correct amortization math ($2,528.27 P&I, $510,177.95 total interest, $910,177.95 total payment, LTV 80%), all 8 extras render (score 62/Mixed, 8 factor cards, recharts SVG, 5-row term table, 6-row rate table, key metrics, break-even, insights), SEO title/meta correct, FAQ + related links + finance disclaimer present, /mortgage-decision-calculator alias works with canonical pointing to /calculator/..., listing pages (calculators, category/finance, homepage Popular) all include it. Dark is default on fresh visit, toggle works both ways with localStorage 'calcytub_theme' persistence across reloads and 9 routes incl. /admin, no FOUC (html.dark already set at DOMContentLoaded). Mobile 390px/375px: no horizontal scroll, inputs stack, chart renders, toggle tappable. All existing spot-checked calculators still compute (Home Loan EMI = INR 43,391.16).",
+  "backend_issues": { "critical": [], "minor": [] },
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": [
+      {"screen": "Mortgage Decision Analyzer - chart", "issues": ["Recharts logs a console warning on first mount: 'The width(-1) and height(-1) of chart should be greater than 0' — chart still renders correctly afterwards; consider giving the ResponsiveContainer wrapper an explicit min-height to silence it."]}
+    ]
+  },
+  "test_report_links": ["/app/test_reports/iteration_3.json"],
+  "action_items": [
+    "Content inconsistency (low): mortgage-decision.js workedExample states 'DTI ≈ 39%' but the app (correctly, per its own documented formula including tax+insurance+maintenance) outputs 42.35% for the default inputs. Update the worked example text (and the spec's expected 39%) to 42.4%.",
+    "Spec-vs-code expected-value drift for the review checklist only (code math verified correct against the standard amortization formula in Node): 15y monthly = $3,484.43 (checklist said $3,486.45) and 6.375% monthly = $2,495.48 (checklist said $2,494.28). No code change needed; the checklist numbers were slightly off.",
+    "Optional: silence recharts width/height(-1) warning with a min-height on the chart container."
+  ],
+  "critical_code_review_comments": [
+    "useTheme() keeps theme in component-local state; if a second component ever calls useTheme() the two instances will desync. Currently only Header uses it, but consider lifting to context if the toggle is added elsewhere (e.g. footer/mobile menu).",
+    "The FOUC inline script sets document.documentElement.style.background, but reading it back after load returns '' (something clears it). The 'dark' class is applied pre-paint so no visible FOUC — but the inline background fallback is effectively inert."
+  ],
+  "updated_files": [],
+  "success_rate": {"backend": "not tested (frontend-only request)", "frontend": "100% of 16 checklist items functionally pass (2 checklist numeric expectations were themselves incorrect; app math verified correct independently)"},
+  "seed_data_creation": "none",
+  "should_call_test_agent_after_fix": false,
+  "should_main_agent_self_test": true,
+  "test_credentials": "admin/changeme123 (admin login page only visually checked in light theme; not logged in)",
+  "context_for_next_testing_agent": "Public URL from /app/frontend/.env is https://quick-calc-1172.preview.emergentagent.com (differs from the URL quoted in the review request). Calculator inputs use id='fld-<key>' (no name attribute) — select with '#fld-rate'. Result labels are uppercased via CSS, so Playwright inner_text returns UPPERCASE; search case-insensitively. Verified this iteration: new mortgage-decision calculator (math + all extras + SEO + alias + listings), dark/light theme default/toggle/persistence/FOUC on 10 routes, mobile 390/375, and regression spot-checks of home-loan-emi, personal-loan-emi, mortgage, sip, fd, gst, bmi.",
+  "rca_of_the_issue": "Only discrepancy found is documentation/expected-value text: workedExample in mortgage-decision.js quotes DTI 39% while compute() adds property tax, insurance and maintenance to the DTI numerator, yielding 42.35% for defaults. Code is internally consistent; the prose is stale."
+}
